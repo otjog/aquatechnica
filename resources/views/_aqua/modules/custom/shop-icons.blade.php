@@ -22,7 +22,7 @@
                     <div class="char_icon"><i class="fas fa-sync fa-2x text-primary"></i></div>
                     <div class="char_content">
                         <div class="char_title">Услуги замены</div>
-                        <div class="char_subtitle">старого <насоса></насоса> на новый</div>
+                        <div class="char_subtitle">старого насоса на новый</div>
                     </div>
                 </div>
             </div>
