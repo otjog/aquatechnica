@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use phpQuery;
 use App\Models\Shop\Product\Product;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class FromSiteController extends Controller{
 
@@ -21,6 +22,8 @@ class FromSiteController extends Controller{
     private $categoryLinkKey;
 
     private $productLinkKey;
+
+    private $pagination;
 
     private $customGroupIterator;
 
@@ -53,6 +56,8 @@ class FromSiteController extends Controller{
 
         $this->productLinkKey   = '#shop-products > div.items > div.product > div.product-box a.product-title';
 
+        $this->pagination = '/page/';
+
         $this->imageParameters = [
             'thumb' => [
                 'action'    => 'replace', //replace|false = nothing
@@ -74,17 +79,18 @@ class FromSiteController extends Controller{
                 'default'   =>  [ 'active'  => '1' ],
                 'columns'   =>  [ 'name'   => 'ul.breadcrumb > li> a:last' ],
             ],
-
+/*
             'images'            => [
                 'default'   =>  [],
                 'columns'   =>  [ 'src' => 'div.product-img-block div.owl-carousel div.item.item-carousel > a > img'],
             ],
+*/
             'products'          => [
                 'default'   =>  [ 'active' => '1', 'manufacturer_id' => '1' ],
                 'columns'   =>  [
-                    //'scu'           => 'div.container > div.row.product-item div.product-sku',
+                    'scu'           => 'div.container > div.row.product-item div.product-sku',
                     'name'          => 'div.container > div.row.product-item h1',
-                    //'description'   => '#tabs_tab_0'
+                    'description'   => '#tabs_tab_0',
                     'weight'        => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
                     'length'        => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
                     'width'         => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
@@ -93,15 +99,15 @@ class FromSiteController extends Controller{
             ],
 
             'product_has_price.retail' => [
-                'default'   =>  [ 'active' => '1', 'price_id' => '2', 'currency_id' => '1' ],
+                'default'   =>  [ 'active' => '1', 'price_id' => '1', 'currency_id' => '1' ],
                 'columns'   =>  [ 'value'  => 'div.container > div.row.product-item div.product-actions div.top-price > span.price' ],
             ],
-
+/*
             'product_has_image'            => [
                 'default'   =>  [],
                 'columns'   =>  [],
             ],
-
+*/
         ];
 
         $this->pivotTable       = 'products';
@@ -119,19 +125,24 @@ class FromSiteController extends Controller{
         $this->thumbImageFolder = 'storage/img/shop/product/thumbnail/';
 
         $this->customGroupIterator = [
+
             /*
             '/nasosnoe_oborudovanie/poverkhnostnye_ehlektronasosy',
             '/nasosnoe_oborudovanie/pogruzhnye_ehlektronasosy_dlja_skvazhin_i_komplektujushhie',
+
             '/nasosnoe_oborudovanie/ehlektronasosy_drenazhnye',
+
             '/stancii_avtomaticheskogo_vodosnabzhenija_ehlementy_i_komplektujushhie/sav_s_gidroakkumuljatorom',
             '/stancii_avtomaticheskogo_vodosnabzhenija_ehlementy_i_komplektujushhie/komplektujushhie_stancij_avtomaticheskogo_vodosnabzhenija',
+            */
             '/cirkuljacionnye_nasosy',
+            /*
             '/gidroakkumuljatory_i_rasshiritelnye_baki/gidroakkumuljatori',
             '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/rasshiritelnye_baki__ehkspansomaty__dlja_sistem_otoplenija',
             '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany',
             '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/membrany_dlja_gidroakkumuljatorov_i_rasshiritelnykh_bakov',
-            */
             '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/zapasnye_chasti_i_ehlementy_kreplenija_bakov'
+            */
         ];
 
     }
@@ -148,9 +159,9 @@ class FromSiteController extends Controller{
 
         $groupIteraror = $this->getGroupIterator();
 
-        foreach($groupIteraror as $group){
+        foreach($groupIteraror as $anchor){
 
-            $itemIterator = $this->getItemIterator( $group );
+            $itemIterator = $this->getItemIterator( $anchor );
 
             foreach ($itemIterator as $item) {
 
@@ -229,9 +240,9 @@ class FromSiteController extends Controller{
 
     }
 
-    private function getItemIterator( $group ){
+    private function getItemIterator($anchor ){
 
-        $url = $this->host . $group . $this->queryUrl;
+        $url = $this->host . $anchor . $this->queryUrl;
 
         $result = [];
 
@@ -267,7 +278,7 @@ class FromSiteController extends Controller{
 
         $links = $html_dom->find($linkName);
 
-        $pq_links = array_map('pq', $links->elements);
+        $pq_links = array_map([$this, 'pickHref'], $links->elements);
 
         phpQuery::unloadDocuments($html_dom->documentID);
 
@@ -276,7 +287,8 @@ class FromSiteController extends Controller{
 
     private function getCurrentParameters($item){
 
-        $html = $this->getHtmlPage($this->host . $item->attr( 'href' ) );
+        $html = $this->getHtmlPage($this->host . $item);
+
         $html_dom = phpQuery::newDocument($html);
 
         $currentParameters = [];
@@ -326,14 +338,14 @@ class FromSiteController extends Controller{
 
                 }elseif ($columnName === 'weight'){
 
-                    return (float) $this->searchValueInTable($searched, 'Вес :', [' кг']);
+                    return (float) $this->searchValueInTable($searched, ['Вес :'], [' кг']);
 
                 }elseif ($columnName === 'length'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size =  $this->searchValueInTable($searched, 'Диаметр:', ' мм');
+                        $size =  $this->searchValueInTable($searched, ['Диаметр:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
@@ -344,30 +356,44 @@ class FromSiteController extends Controller{
 
                 }elseif ($columnName === 'width'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size = $this->searchValueInTable($searched, 'Высота:', ' мм');
+                        $size = $this->searchValueInTable($searched, ['Высота:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
                     }else{
                         $sizeArray = explode('x', $sizeRaw);
-                        return (integer)$sizeArray[ count($sizeArray) - 2 ] / 10;
+                        $index = count($sizeArray) - 2;
+                        if(isset( $sizeArray[ $index ] )){
+                            return (integer)$sizeArray[ $index ] / 10;
+                        }else{
+                            return (integer)$sizeArray[ 0 ] / 10;
+                        }
                     }
 
                 }elseif ($columnName === 'height'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size = $this->searchValueInTable($searched, 'Высота:', ' мм');
+                        $size = $this->searchValueInTable($searched, ['Высота:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
                     }else{
                         $sizeArray = explode('x', $sizeRaw);
-                        return (integer)$sizeArray[ count($sizeArray) - 1 ] / 10;
+                        $index = count($sizeArray) - 1;
+                        if(isset( $sizeArray[ $index ] )){
+                            return (integer)$sizeArray[ $index ] / 10;
+                        }else{
+                            if(isset( $sizeArray[ 1 ] )){
+                                return (integer)$sizeArray[ 1 ] / 10;
+                            }else{
+                                return (integer)$sizeArray[ 0 ] / 10;
+                            }
+                        }
                     }
                 }
 
@@ -497,62 +523,65 @@ class FromSiteController extends Controller{
 
                 $srcImageData = $this->getImageData($src);
 
-                /*****************Create Image************************/
-                $image = $this->loadImage($src, $srcImageData['const_ext']);
+                if($srcImageData){
+                    /*****************Create Image************************/
+                    $image = $this->loadImage($src, $srcImageData['const_ext']);
 
-                $squareImage = $this->createNewImage($image, $srcImageData, 'big');
+                    $squareImage = $this->createNewImage($image, $srcImageData, 'big');
 
-                if($squareImage){
+                    if($squareImage){
 
-                    $imageName  = $this->getNewImageName($this->mainImageFolder, $sc_value . $this->imageParameters['big']['addition'], $srcImageData['extension']);
+                        $imageName  = $this->getNewImageName($this->mainImageFolder, $sc_value . $this->imageParameters['big']['addition'], $srcImageData['extension']);
 
-                    $newImage   = $this->saveImage($squareImage, $imageName, $this->mainImageFolder, $srcImageData['const_ext']);
+                        $newImage   = $this->saveImage($squareImage, $imageName, $this->mainImageFolder, $srcImageData['const_ext']);
 
-                    if($newImage !== false){
+                        if($newImage !== false){
 
-                        $tableRow = $this->getCurrentTableRow($imagesCollection, 'src', $imageName);
+                            $tableRow = $this->getCurrentTableRow($imagesCollection, 'src', $imageName);
 
-                        if($tableRow !== null){
+                            if($tableRow !== null){
 
-                            $data['images']['update'] = $this->getArrayForUpdate(['src' => $imageName], $tableRow, $data['images']['update']);
+                                $data['images']['update'] = $this->getArrayForUpdate(['src' => $imageName], $tableRow, $data['images']['update']);
 
-                        }else{
+                            }else{
 
-                            $result = $this->getArrayForInsert(['src' => $imageName], $data['images']['new'], 'src');
+                                $result = $this->getArrayForInsert(['src' => $imageName], $data['images']['new'], 'src');
 
-                            if($result !== false) {
-                                $data['images']['new'][] = $result;
-                                $data['product_has_image'][] = [ 'product_' . $this->compareColumn  => $sc_value, 'src' => $result['src']];
+                                if($result !== false) {
+                                    $data['images']['new'][] = $result;
+                                    $data['product_has_image'][] = [ 'product_' . $this->compareColumn  => $sc_value, 'src' => $result['src']];
+                                }
+
                             }
 
                         }
 
                     }
-
-                }
-                /*****************End Image***************************/
+                    /*****************End Image***************************/
 
 
-                /*****************Create Thumb************************/
-                if($key === 0){
+                    /*****************Create Thumb************************/
+                    if($key === 0){
 
-                    $thumb = $this->createNewImage($image, $srcImageData, 'thumb');
+                        $thumb = $this->createNewImage($image, $srcImageData, 'thumb');
 
-                    if($thumb){
+                        if($thumb){
 
-                        $thumbName = $this->getNewImageName($this->thumbImageFolder, $sc_value . $this->imageParameters['thumb']['addition'], $srcImageData['extension']);
-                        $newThumb = $this->saveImage($thumb, $thumbName, $this->thumbImageFolder, $srcImageData['const_ext']);
+                            $thumbName = $this->getNewImageName($this->thumbImageFolder, $sc_value . $this->imageParameters['thumb']['addition'], $srcImageData['extension']);
+                            $newThumb = $this->saveImage($thumb, $thumbName, $this->thumbImageFolder, $srcImageData['const_ext']);
 
-                        if($newThumb !== false){
+                            if($newThumb !== false){
 
-                            $data['products'][$sc_value]['thumbnail'] = $thumbName;
+                                $data['products'][$sc_value]['thumbnail'] = $thumbName;
+
+                            }
 
                         }
 
                     }
-
+                    /*****************End Thumb************************/
                 }
-                /*****************End Thumb************************/
+
             }
 
         }
@@ -761,6 +790,7 @@ class FromSiteController extends Controller{
         DB::table('product_has_price')
             ->where('active', 1)
             ->whereIn('product_id',    $columns['products_id'])
+            ->whereIn('price_id',      $columns['prices_id'])
             ->update(['active' => 0]
             );
     }
@@ -768,11 +798,38 @@ class FromSiteController extends Controller{
     //todo переименовать функцию
     private function getImageData($src){
 
-        list($imageData['width'], $imageData['height'], $imageData['const_ext']) =  getimagesize($src);
+        try{
 
-        $imageData['extension'] = $this->getExtensionImage($imageData['const_ext']);
+            list($imageData['width'], $imageData['height'], $imageData['const_ext']) =  getimagesize($src);
 
-        return $imageData;
+            $imageData['extension'] = $this->getExtensionImage($imageData['const_ext']);
+
+            return $imageData;
+
+
+        }catch (Exception $e){
+
+            try{
+
+                $filename='storage/img/shop/product/temporary.file';
+
+                file_put_contents($filename,file_get_contents($src));
+
+                list($imageData['width'], $imageData['height'], $imageData['const_ext']) =  getimagesize($src);
+
+                $imageData['extension'] = $this->getExtensionImage($imageData['const_ext']);
+
+                return $imageData;
+
+            }catch (Exception $e){
+
+                file_put_contents('storage/img/shop/product/exc.txt', $src, FILE_APPEND);
+
+                return false;
+
+            }
+
+        }
 
     }
 
@@ -925,16 +982,23 @@ class FromSiteController extends Controller{
     }
 
     private function getNextUrl($url, $i){
-        return $url.'/page/'.$i;
+        return $url . $this->pagination . $i;
     }
 
-    private function searchValueInTable($searched, $prevSiblingValue, $replaceStr){
-        foreach($searched as $key => $td){
-            $pq_td = pq($td);
-            if($pq_td->text() === $prevSiblingValue){
-                return trim( str_replace($replaceStr, '',  trim( $pq_td->next()->text() ) ) );
+    private function searchValueInTable($searched, $prevSiblingValues, $replaceStr){
+        foreach($prevSiblingValues as $prevSiblingValue){
+            foreach($searched as $key => $td){
+                $pq_td = pq($td);
+                if($pq_td->text() === $prevSiblingValue){
+                    return trim( str_replace($replaceStr, '',  trim( $pq_td->next()->text() ) ) );
+                }
             }
         }
+    }
+
+    private function pickHref($anchor){
+        $anchor = pq($anchor);
+        return $anchor->attr('href');
     }
 
 }
