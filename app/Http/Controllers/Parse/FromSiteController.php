@@ -46,17 +46,17 @@ class FromSiteController extends Controller{
     private $image;
 
     public function __construct(Request $request, Product $product, Category $category, Image $image){
-        $this->host             = '';   //'http://aprilgroup.ru'
+        $this->host             = 'http://aprilgroup.ru';
 
         $this->startPathName    = '';
 
         $this->queryUrl         = '';
 
-        $this->categoryLinkKey  = '';   //'div#collapse11  a[href=#collapse28]';
+        $this->categoryLinkKey  = 'div#collapse11  a[href=#collapse28]';
 
-        $this->productLinkKey   = '';   //'#shop-products > div.items > div.product > div.product-box a.product-title';
+        $this->productLinkKey   = '#shop-products > div.items > div.product > div.product-box a.product-title';
 
-        $this->pagination       = '';   //?PAGEN_1=
+        $this->pagination = '/page/';
 
         $this->imageParameters = [
             'thumb' => [
@@ -77,36 +77,37 @@ class FromSiteController extends Controller{
 
             'categories'        => [
                 'default'   =>  [ 'active'  => '1' ],
-                'columns'   =>  [ 'name'   => '/*jquery_lang*/' ],
+                'columns'   =>  [ 'name'   => 'ul.breadcrumb > li> a:last' ],
             ],
-
+/*
             'images'            => [
                 'default'   =>  [],
-                'columns'   =>  [ 'src' => '/*jquery_lang*/'],
+                'columns'   =>  [ 'src' => 'div.product-img-block div.owl-carousel div.item.item-carousel > a > img'],
             ],
+*/
             'products'          => [
                 'default'   =>  [ 'active' => '1', 'manufacturer_id' => '1' ],
                 'columns'   =>  [
-                    'scu'           => '/*jquery_lang*/',
-                    'name'          => '/*jquery_lang*/',
-                    'description'   => '/*jquery_lang*/',
-                    'weight'        => '/*jquery_lang*/',
-                    'length'        => '/*jquery_lang*/',
-                    'width'         => '/*jquery_lang*/',
-                    'height'        => '/*jquery_lang*/',
+                    'scu'           => 'div.container > div.row.product-item div.product-sku',
+                    'name'          => 'div.container > div.row.product-item h1',
+                    'description'   => '#tabs_tab_0',
+                    'weight'        => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
+                    'length'        => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
+                    'width'         => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
+                    'height'        => 'div.container div#tabs_tab_1 div.table-responsive table.table.table-striped td',
                 ],
             ],
 
             'product_has_price.retail' => [
                 'default'   =>  [ 'active' => '1', 'price_id' => '1', 'currency_id' => '1' ],
-                'columns'   =>  [ 'value'  => '/*jquery_lang*/' ],
+                'columns'   =>  [ 'value'  => 'div.container > div.row.product-item div.product-actions div.top-price > span.price' ],
             ],
-
+/*
             'product_has_image'            => [
                 'default'   =>  [],
                 'columns'   =>  [],
             ],
-
+*/
         ];
 
         $this->pivotTable       = 'products';
@@ -124,13 +125,29 @@ class FromSiteController extends Controller{
         $this->thumbImageFolder = 'storage/img/shop/product/thumbnail/';
 
         $this->customGroupIterator = [
-            // '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/zapasnye_chasti_i_ehlementy_kreplenija_bakov'
+
+            /*
+            '/nasosnoe_oborudovanie/poverkhnostnye_ehlektronasosy',
+            '/nasosnoe_oborudovanie/pogruzhnye_ehlektronasosy_dlja_skvazhin_i_komplektujushhie',
+
+            '/nasosnoe_oborudovanie/ehlektronasosy_drenazhnye',
+
+            '/stancii_avtomaticheskogo_vodosnabzhenija_ehlementy_i_komplektujushhie/sav_s_gidroakkumuljatorom',
+            '/stancii_avtomaticheskogo_vodosnabzhenija_ehlementy_i_komplektujushhie/komplektujushhie_stancij_avtomaticheskogo_vodosnabzhenija',
+            */
+            '/cirkuljacionnye_nasosy',
+            /*
+            '/gidroakkumuljatory_i_rasshiritelnye_baki/gidroakkumuljatori',
+            '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/rasshiritelnye_baki__ehkspansomaty__dlja_sistem_otoplenija',
+            '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany',
+            '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/membrany_dlja_gidroakkumuljatorov_i_rasshiritelnykh_bakov',
+            '/rasshiritelnye_baki_gidroakkumuljatory_mnogofunkcionalnye_baki_i_membrany/zapasnye_chasti_i_ehlementy_kreplenija_bakov'
+            */
         ];
 
     }
 
     public function parse(){
-
         $newDataInTables = $this->read();
 
         $this->store($newDataInTables);
@@ -213,9 +230,7 @@ class FromSiteController extends Controller{
     private function getGroupIterator(){
 
         if( count($this->customGroupIterator) > 0 ){
-
             return $this->customGroupIterator;
-
         }else{
 
             $url = $this->host . $this->startPathName;
@@ -238,17 +253,13 @@ class FromSiteController extends Controller{
             $pq_links = $this->getIteratorElements($nextUrl, $this->productLinkKey);
 
             if(count( $pq_links ) === 0){
-
                 break;
-
             }
 
             $different = array_diff($pq_links, $result);
 
             if( count( $different ) === 0){
-
                 break;
-
             }
 
             $result = array_merge($result, $pq_links);
@@ -327,14 +338,14 @@ class FromSiteController extends Controller{
 
                 }elseif ($columnName === 'weight'){
 
-                    return (float) $this->searchValueInTable($searched, 'Вес :', [' кг']);
+                    return (float) $this->searchValueInTable($searched, ['Вес :'], [' кг']);
 
                 }elseif ($columnName === 'length'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size =  $this->searchValueInTable($searched, 'Диаметр:', ' мм');
+                        $size =  $this->searchValueInTable($searched, ['Диаметр:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
@@ -345,30 +356,44 @@ class FromSiteController extends Controller{
 
                 }elseif ($columnName === 'width'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size = $this->searchValueInTable($searched, 'Высота:', ' мм');
+                        $size = $this->searchValueInTable($searched, ['Высота:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
                     }else{
                         $sizeArray = explode('x', $sizeRaw);
-                        return (integer)$sizeArray[ count($sizeArray) - 2 ] / 10;
+                        $index = count($sizeArray) - 2;
+                        if(isset( $sizeArray[ $index ] )){
+                            return (integer)$sizeArray[ $index ] / 10;
+                        }else{
+                            return (integer)$sizeArray[ 0 ] / 10;
+                        }
                     }
 
                 }elseif ($columnName === 'height'){
 
-                    $sizeRaw = $this->searchValueInTable($searched, 'Габаритные размеры Д х Ш х В, мм:', [' ', 'Ø']);
+                    $sizeRaw = $this->searchValueInTable($searched, ['Габаритные размеры Д х Ш х В, мм:', 'Габаритные размеры, мм:', 'Монтажная длина, мм:'], [' ', 'Ø']);
 
                     if($sizeRaw === null){
-                        $size = $this->searchValueInTable($searched, 'Высота:', ' мм');
+                        $size = $this->searchValueInTable($searched, ['Высота:'], ' мм');
                         if($size !== null)
                             return (integer)$size / 10;
                         return null;
                     }else{
                         $sizeArray = explode('x', $sizeRaw);
-                        return (integer)$sizeArray[ count($sizeArray) - 1 ] / 10;
+                        $index = count($sizeArray) - 1;
+                        if(isset( $sizeArray[ $index ] )){
+                            return (integer)$sizeArray[ $index ] / 10;
+                        }else{
+                            if(isset( $sizeArray[ 1 ] )){
+                                return (integer)$sizeArray[ 1 ] / 10;
+                            }else{
+                                return (integer)$sizeArray[ 0 ] / 10;
+                            }
+                        }
                     }
                 }
 
@@ -384,7 +409,7 @@ class FromSiteController extends Controller{
                     $images = [];
                     foreach($searched as $image){
                         $pq_image = pq($image);
-                        $images[] = $pq_image->attr('src');
+                        $images[] = $this->host . '/' . str_replace('100x108', '800x860', $pq_image->attr('src'));
                     }
                     return $images;
                 }
@@ -960,11 +985,13 @@ class FromSiteController extends Controller{
         return $url . $this->pagination . $i;
     }
 
-    private function searchValueInTable($searched, $prevSiblingValue, $replaceStr){
-        foreach($searched as $key => $td){
-            $pq_td = pq($td);
-            if($pq_td->text() === $prevSiblingValue){
-                return trim( str_replace($replaceStr, '',  trim( $pq_td->next()->text() ) ) );
+    private function searchValueInTable($searched, $prevSiblingValues, $replaceStr){
+        foreach($prevSiblingValues as $prevSiblingValue){
+            foreach($searched as $key => $td){
+                $pq_td = pq($td);
+                if($pq_td->text() === $prevSiblingValue){
+                    return trim( str_replace($replaceStr, '',  trim( $pq_td->next()->text() ) ) );
+                }
             }
         }
     }
