@@ -12,4 +12,6 @@ npm-debug.log
 yarn-error.log
 .env
 
-/resources/views/inclusion/*
+#delete_before_clone
+/public/.htaccess
+/public/favicon.ico
