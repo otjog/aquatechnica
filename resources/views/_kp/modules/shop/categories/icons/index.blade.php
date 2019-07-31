@@ -27,10 +27,16 @@
                                 <div class="popular_category d-flex flex-column align-items-center justify-content-center">
                                     @if(isset($category['images']) && $category['images'] !== null && count($category['images']) > 0)
                                         <span class="popular_category_image">
+                                            @php
+                                                if (count($category['images']) > 0)
+                                                    $imageSrc = $category['images'][0]->src;
+                                                else
+                                                    $imageSrc = 'noimage';
+                                            @endphp
                                             <a href="{{route('categories.show', $category['id'])}}">
                                                 <img
-                                                        src="{{route('models.sizes.images.show', ['category', 's', $category['images'][0]->src])}}"
-                                                        alt="{{$category['images'][0]->alt}}">
+                                                        src="{{route('getImage', ['category', 's', $imageSrc, $category['id']])}}"
+                                                        alt="{{$category['images'][0]->alt or $category['name']}}">
                                             </a>
                                         </span>
                                     @endif
