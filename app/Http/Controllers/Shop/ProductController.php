@@ -3,19 +3,14 @@
 namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
-use App\Models\Shop\Order\Basket;
-use App\Models\Site\Module;
-use App\Models\Site\Template;
-use Illuminate\Http\Request;
 use App\Models\Shop\Product\Product;
-use App\Models\Settings;
+use App\Facades\GlobalData;
 use App\Models\Site\Photo360;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller{
 
     protected $products;
-
-    protected $settings;
 
     /**
      * Создание нового экземпляра контроллера.
@@ -26,8 +21,6 @@ class ProductController extends Controller{
     public function __construct(Product $products)
     {
         $this->products = $products;
-
-        $this->settings = Settings::getInstance();
     }
 
     /**
@@ -36,17 +29,19 @@ class ProductController extends Controller{
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $photo360 = new Photo360();
 
-        $data['shop']['product'] = $this->products->getActiveProduct($id);
+        $productsFromRoute = $this->products->getProductsFromRoute($request->route()->parameters, [], false);
 
+        $data['shop']['product'] = $productsFromRoute[0];
+        //todo ни в коем случае нельзя обращаться к [0], вдруг его нет
         $data['photo360'] = $photo360->getPhotos($data['shop']['product']['scu']);
 
         $data['shop']['parcelData'] = $this->products->getJsonParcelParameters([$data['shop']['product']]);
 
-        $globalData = $this->settings->getParametersForController($data,'shop', 'product', 'show', $id);
+        $globalData = GlobalData::getParametersForController($data,'shop', 'product', 'show', $id);
 
         return view($globalData['template']['viewKey'], ['global_data' => $globalData]);
     }

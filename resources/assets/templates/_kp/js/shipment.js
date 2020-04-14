@@ -2,7 +2,6 @@ import Ajax from './ajax';
 import InitMap from './googlemap';
 import MarkerClusterer from '@google/markerclusterer/src/markerclusterer';
 
-
 export default function Shipment(){
 
     this.getOffers = function () {
@@ -162,8 +161,8 @@ export default function Shipment(){
      * @param {String} [queryString] - строка, к которой нужно добавить параметры. Не обязательный параметр
      * @returns {string}
      */
-    function setQueryString(attributes, queryString = ''){
-
+    function setQueryString(attributes, queryString = '')
+    {
         if(attributes.length !== undefined && attributes.length !== null && attributes.length > 0 ){
         //для атрибутов ДОМ-Элемента
             for (let i = 0; i < attributes.length; i++) {
@@ -246,8 +245,9 @@ export default function Shipment(){
 
                     let result = String(ajaxReq.req.responseText);
                     self.reloadBlock.innerHTML = result;
-                    if(result !== ''){
 
+                    if(result !== ''){
+                        
                         let arrayReqName = self.requestName.split('_');
 
                         if (arrayReqName[arrayReqName.length -1 ] === 'toDoor' && arrayReqName[arrayReqName.length - 2 ] !== 'toDoor') {
@@ -296,7 +296,7 @@ export default function Shipment(){
 
                         let value = self.elements.shipmentOffersPrices[i].innerHTML;
 
-                        if(value !== '') {
+                        if(Number.isInteger(value*1)) {
                             pricesArray[i] = value * 1;
                         }
                     }
@@ -304,8 +304,13 @@ export default function Shipment(){
                     for(let i = 0; i < self.elements.shipmentOffersDays.length; i++){
                         let valuesArray = self.elements.shipmentOffersDays[i].innerHTML.split('-');
 
-                        if(valuesArray[0] !== ''){
-                            if(valuesArray[1] !== undefined && valuesArray[1] !== null){
+                        if(Number.isInteger(valuesArray[0]*1)){
+
+                            if (
+                                valuesArray[1] !== undefined
+                                && valuesArray[1] !== null
+                                && Number.isInteger(valuesArray[1]*1)
+                            ) {
                                 daysArray[i] = valuesArray[1] * 1;
                             }else{
                                 daysArray[i] = valuesArray[0] * 1;

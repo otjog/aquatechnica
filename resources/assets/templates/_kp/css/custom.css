@@ -52,11 +52,6 @@ ul.child {
     position: absolute;
 }
 
-.price.category-product {
-    font-size: 1.1rem;
-    line-height: 1.1;
-}
-
 .price.product-detail{
     font-size: 2rem;
 }
@@ -89,8 +84,8 @@ ul.child {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.filter-clear {
-    border-bottom: 1px dotted;
+.filter-clear
+{
     cursor: pointer;
 }
 .fancybox-navigation {
@@ -99,4 +94,43 @@ ul.child {
 
 .nav-tabs .nav-item {
     cursor: pointer;
+}
+.tiny_slider_arrow {
+    width: 0;
+    height: 0;
+    border: 25px solid transparent;
+    margin: auto;
+    cursor: pointer;
+}
+.tiny_slider_arrow[data-direction=prev]{
+    border-bottom-color: steelblue;
+    border-top: 0;
+}
+
+.tiny_slider_arrow[data-direction=next]{
+    border-top-color: steelblue;
+    border-bottom: 0;
+}
+.border-bottom-dotted{
+    border-bottom: 1px dotted;
+}
+/* Эффект нажатия */
+form.shop-buy-form .btn:active {
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.5) inset !important;
+}
+/*Удаляем свечение вокруг кнопки*/
+button, input {
+    outline: 0 !important;
+}
+button::-moz-focus-inner
+{
+    border: 0;
+}
+
+.bg-grey {
+    background-color: #dae0e5 !important;
+}
+
+a.bg-grey:hover, a.bg-light:focus, button.bg-light:hover, button.bg-light:focus {
+    background-color: #cccccc !important;
 }
