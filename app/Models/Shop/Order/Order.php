@@ -2,13 +2,19 @@
 
 namespace App\Models\Shop\Order;
 
+use App\Models\Shop\Services\PaymentService;
 use Illuminate\Database\Eloquent\Model;
-use App\Events\NewOrder;
 use App\Models\Shop\Product\Product;
 use Illuminate\Support\Facades\DB;
 
-class Order extends Model{
-
+class Order extends Model
+{
+    public function getNameAttribute($value)
+    {
+        if($value === null)
+            return 'Ваш заказ';
+        return $value;
+    }
 
     protected $table = 'shop_orders';
 
@@ -107,9 +113,26 @@ class Order extends Model{
             ->get();
     }
 
+    public function getDataForCreateOrder()
+    {
+        $baskets = new Basket();
+
+        $data['basket']   = $baskets->getActiveBasketWithProductsAndRelations();
+
+        $payments = new PaymentService();
+
+        $data['payments'] = $payments->getActiveMethodsWithTax($data['basket']['total']);
+
+        $products = new Product();
+
+        $data['parcelData'] = $products->getJsonParcelParameters($data['basket']->products);
+
+        return $data;
+    }
+
     public function storeOrder($data, $basket, $customer, Product $products){
 
-        $data_order = $this->getDataForOrder($data, $basket, $customer);
+        $data_order = $this->getDataForStoreOrder($data, $basket, $customer);
 
         $order = self::create($data_order);
 
@@ -123,12 +146,10 @@ class Order extends Model{
 
         $basket->save();
 
-        event(new NewOrder($order->id));
-
         return $order;
     }
 
-    private function getDataForOrder($data, $basket, $customer){
+    private function getDataForStoreOrder($data, $basket, $customer){
 
         $data_order = [
             'shop_basket_id'    => $basket->id,

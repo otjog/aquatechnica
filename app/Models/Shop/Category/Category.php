@@ -3,12 +3,12 @@
 namespace App\Models\Shop\Category;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Settings;
+use App\Facades\GlobalData;
 
 class Category extends Model{
 
     protected $moduleMethods = [
-        'index' => 'getCategoriesTree',
+        'index' => 'getActiveChildrenCategories',
     ];
 
     public function getModuleMethods($moduleMethod)
@@ -17,6 +17,13 @@ class Category extends Model{
     }
 
     protected $fillable = ['active', 'name'];
+
+    public function getNameAttribute($value)
+    {
+        if($value === null)
+            return 'Категории магазина';
+        return $value;
+    }
 
     public function products()
     {
@@ -28,11 +35,22 @@ class Category extends Model{
         return $this->morphToMany('App\Models\Site\Image', 'imageable');
     }
 
+    public function parent()
+    {
+        return $this->belongsTo(    'App\Models\Shop\Category\Category');
+    }
+
+    public function children()
+    {
+        return $this->hasMany('App\Models\Shop\Category\Category', 'parent_id');
+    }
+
     public function getAllCategories(){
         return self::select(
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
             )
@@ -45,12 +63,15 @@ class Category extends Model{
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
             ->where('active', 1)
             ->orderBy('sort')
             ->with('images')
+            ->with('parent')
+            ->with('children')
             ->get();
     }
 
@@ -59,6 +80,7 @@ class Category extends Model{
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
@@ -74,6 +96,7 @@ class Category extends Model{
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
@@ -83,11 +106,12 @@ class Category extends Model{
             ->get();
     }
 
-    public function getActiveChildrenCategories($parent_id){
+    public function getActiveChildrenCategories($parent_id = 0){
         return self::select(
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
@@ -103,13 +127,23 @@ class Category extends Model{
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
             ->where('id', $id)
             ->orderBy('name')
             ->with('images')
+            ->with('parent')
+            ->with('children')
             ->get();
+    }
+
+    public function getRootCategory()
+    {
+        $rootCategory = new self();
+        $rootCategory->children = $this->getActiveChildrenCategories(0);
+        return $rootCategory;
     }
 
     public function getCategoryIfActive($id){
@@ -117,6 +151,7 @@ class Category extends Model{
             'id',
             'parent_id',
             'name',
+            'description',
             'original_name',
             'url'
         )
@@ -127,12 +162,11 @@ class Category extends Model{
             ->get();
     }
 
+    /*Depricated???*/
     public function getCategoriesTree($parent_id = 0)
     {
-        $settings = Settings::getInstance();
-
-        if($settings->getParameter('models.category.categoriesTree')){
-            return $settings->getParameter('models.category.categoriesTree');
+        if(GlobalData::getParameter('models.category.categoriesTree')){
+            return GlobalData::getParameter('models.category.categoriesTree');
         }
 
         /**
@@ -160,9 +194,25 @@ class Category extends Model{
 
         $result = collect($tree);
 
-        $settings->addParameter('models.category.categoriesTree', $result);
+        GlobalData::addParameter('models.category.categoriesTree', $result);
 
         return $result;
     }
 
+    /*добавить эту функцию ко всем моделям продуктов, чтобы использовать в качестве breadcrumbs*/
+    public function getParentCategories($id, $categories = [], $allCategories = null  )
+    {
+        if ($allCategories === null)
+            $allCategories = $this->getActiveCategories();
+
+        $category = $allCategories->first(function ($value, $key) use ($id) {
+            return $value->id === $id;
+        });
+
+        if ($category !== null) {
+            $category->children = $categories;
+            return $this->getParentCategories($category->parent_id, $category, $allCategories);
+        }
+        return $categories;
+    }
 }

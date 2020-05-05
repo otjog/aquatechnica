@@ -4,6 +4,7 @@ namespace App\Models\Geo;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Libraries\Geo\GeoLite;
+use GeoIp2\Exception\AddressNotFoundException;
 
 class GeoData extends Model{
 
@@ -17,8 +18,8 @@ class GeoData extends Model{
     }
 
     /** @return array */
-    public function getGeoData(){
-
+    public function getGeoData()
+    {
         return session()->get('geoInput', function() {
 
             if(session()->get('geoIp') === null){
@@ -28,8 +29,8 @@ class GeoData extends Model{
         });
     }
 
-    public function setGeoInput($json){
-
+    public function setGeoInput($json)
+    {
         if($json !== null){
             $objectData = json_decode($json);
 
@@ -65,58 +66,64 @@ class GeoData extends Model{
 
     }
 
-    public function setGeoIp(){
-
-        $ipAddress = $_SERVER['REMOTE_ADDR'];
-
-        if($_SERVER['REMOTE_ADDR'] === '127.0.0.1'){
-
-            //$ipAddress = '213.87.147.113'; //Москва
-            //$ipAddress = '178.216.79.66'; //Белгород
-            //$ipAddress = '92.37.241.243'; //Комсомольск-на-Амуре (Хабаровский край)
-            $ipAddress = '94.243.63.255'; //Чита (Забайкальский край)
-
-        }
+    public function setGeoIp()
+    {
+        //if (!isset($_SERVER['REMOTE_ADDR']) || $_SERVER['REMOTE_ADDR'] === '127.0.0.1')
+          //  $ipAddress = '213.87.147.113'; //Москва
+        //else
+            $ipAddress = $_SERVER['REMOTE_ADDR'];
 
         $geolite = new GeoLite();
 
         $objectData = $geolite->getGeoCity($ipAddress);
 
-        $geoData = [
-            'postal_code'   => $objectData->postal->code,
-            'country_code'  => $objectData->raw['country']['iso_code'],
-            'country_name'  => $objectData->country->names['ru'],
-            'city_name'     => $objectData->city->names['ru'],
-            'latitude'      => $objectData->location->latitude,
-            'longitude'     => $objectData->location->longitude,
-        ];
+        if ($objectData !== null) {
+            $geoData = [
+                'postal_code'   => $objectData->postal->code,
+                'country_code'  => $objectData->raw['country']['iso_code'],
+                'latitude'      => $objectData->location->latitude,
+                'longitude'     => $objectData->location->longitude,
+            ];
 
-        if( isset( $objectData->subdivisions[0]->names['ru'] ) ){
+            $countryIsoCodeStrLower = strtolower($geoData['country_code']);
 
-            $regionData = $this->getRegionData($objectData->subdivisions[0]->names['ru']);
+            if (isset($objectData->country->names[$countryIsoCodeStrLower]))
+                $geoData['country_name'] = $objectData->country->names[$countryIsoCodeStrLower];
+            else
+                $objectData->country->names['en'];
 
-            $geoData = array_merge( $geoData, $regionData );
+            if (isset($objectData->city->names[$countryIsoCodeStrLower]))
+                $geoData['city_name'] = $objectData->city->names[$countryIsoCodeStrLower];
+            else
+                $objectData->city->names['en'];
 
-            session(['geoIp' => $geoData]);
+            if( isset( $objectData->subdivisions[0]->names['ru'] ) ){
 
-        }else{
+                $regionData = $this->getRegionData($objectData->subdivisions[0]->names['ru']);
 
-            session(['geoIp' => null]);// todo что отдавать, если geoIp NULL????
+                $geoData = array_merge( $geoData, $regionData );
 
+                session(['geoIp' => $geoData]);
+
+            }else{
+                session(['geoIp' => null]); // todo что отдавать, если geoIp NULL????
+            }
+        } else {
+            session(['geoIp' => null]);
         }
-
 
     }
 
-    private function getCountryCode($countryName){
+    private function getCountryCode($countryName)
+    {
         switch($countryName){
             case 'Россия'   : return 'RU';
             case 'Украина'  : return 'UA';
         }
     }
 
-    private function getRegionData($fullRegionName){
-
+    private function getRegionData($fullRegionName)
+    {
         $regionTypes = [
             'АО' => 'АО', 'край' => 'край', 'Аобл' => 'Автономная область', 'обл' => 'область'
         ];
@@ -135,7 +142,8 @@ class GeoData extends Model{
         return $data;
     }
 
-    private function getRegionCodeByShortRegionName($regionName){
+    private function getRegionCodeByShortRegionName($regionName)
+    {
         switch($regionName){
             case 'Адыгея'                   : return '01'; break;
             case 'Башкортостан'             : return '02'; break;
@@ -223,7 +231,6 @@ class GeoData extends Model{
             case 'Ямало-Ненецкий'           : return '89'; break;
             case 'Севастополь'              : return '91'; break;
             default : return null;
-
         }
     }
 

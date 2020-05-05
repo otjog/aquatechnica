@@ -1,1 +1,0 @@
-@include( $global_data['template']['name'] . '.components.shop.product.elements._reload-list', $global_data['ajax'], ['global_data' => $global_data])
